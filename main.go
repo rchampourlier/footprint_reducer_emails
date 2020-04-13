@@ -3,11 +3,13 @@ package main
 import (
 	"log"
 	"os"
-	"strings"
+	"strconv"
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
 )
+
+const MAILBOX_NAME = "[Gmail]/Tous les messages"
 
 func main() {
 	// Connect to server
@@ -25,10 +27,56 @@ func main() {
 	password := os.Getenv("PASSWORD")
 
 	if err := c.Login(email, password); err != nil {
-		log.Fatal(err)
+		log.Fatalln("LOGIN ERROR: " + err.Error())
 	}
 
-	// List mailboxes
+	messages, err := fetchMessages(c, MAILBOX_NAME)
+	if err != nil {
+		log.Println("FETCHING MESSAGES ERROR: " + err.Error())
+	}
+	log.Printf("Done: " + strconv.Itoa(len(messages)) + " messages!\n\n")
+
+	senders := listSenders(messages)
+	log.Printf("%d senders\n", len(senders))
+	for _, s := range senders {
+		log.Printf("  - %s\n", s.Address())
+	}
+}
+
+func fetchMessages(c *client.Client, mailboxName string) ([]*imap.Message, error) {
+	var messages []*imap.Message
+
+	mbox, err := c.Select(mailboxName, false)
+	if err != nil {
+		log.Println("SELECT MAILBOX ERROR: " + err.Error())
+		return nil, err
+	}
+	if mbox.Messages > 0 {
+		messages = make([]*imap.Message, 0)
+
+		// Fetching all messages
+		seqset := new(imap.SeqSet)
+		seqset.AddRange(1, mbox.Messages)
+
+		fetchedMessages := make(chan *imap.Message, mbox.Messages)
+		done := make(chan error, 1)
+		go func() {
+			done <- c.Fetch(seqset, []imap.FetchItem{imap.FetchEnvelope}, fetchedMessages)
+		}()
+
+		for msg := range fetchedMessages {
+			messages = append(messages, msg)
+		}
+
+		if err := <-done; err != nil {
+			log.Println("ERROR: " + err.Error())
+		}
+	}
+
+	return messages, nil
+}
+
+func listMailboxes(c *client.Client) []string {
 	mailboxes := make(chan *imap.MailboxInfo, 10)
 	done := make(chan error, 1)
 	go func() {
@@ -41,38 +89,23 @@ func main() {
 	}
 
 	if err := <-done; err != nil {
-		log.Fatal(err)
+		log.Fatalln("LIST MAILBOX ERROR: " + err.Error())
 	}
+	return mailboxNames
+}
 
-	for _, m := range mailboxNames {
-		mbox, err := c.Select(m, false)
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Println("* " + m)
+func listSenders(messages []*imap.Message) []*imap.Address {
+	uniqueSenders := make(map[string]bool)
+	senders := make([]*imap.Address, 0)
 
-		if mbox.Messages > 0 {
-			// Get all messages
-			from := uint32(1)
-			to := mbox.Messages
-			seqset := new(imap.SeqSet)
-			seqset.AddRange(from, to)
-
-			messages := make(chan *imap.Message, 10)
-			done = make(chan error, 1)
-			go func() {
-				done <- c.Fetch(seqset, []imap.FetchItem{imap.FetchEnvelope}, messages)
-			}()
-
-			for msg := range messages {
-				log.Println("  - " + msg.Envelope.Subject + " (" + strings.Join(msg.Flags, ",") + ")")
-			}
-
-			if err := <-done; err != nil {
-				log.Fatal(err)
+	for _, m := range messages {
+		for _, msgSender := range m.Envelope.Sender {
+			if uniqueSenders[msgSender.Address()] != true {
+				uniqueSenders[msgSender.Address()] = true
+				senders = append(senders, msgSender)
 			}
 		}
 	}
 
-	log.Println("Done!")
+	return senders
 }
