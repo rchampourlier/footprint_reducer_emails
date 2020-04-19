@@ -11,7 +11,7 @@ import (
 	"github.com/emersion/go-imap/client"
 )
 
-const MAILBOX_NAME = "[Gmail]/Tous les messages"
+const mailboxName = "[Gmail]/Tous les messages"
 
 func main() {
 	// Connect to server
@@ -32,7 +32,7 @@ func main() {
 		log.Fatalln("LOGIN ERROR: " + err.Error())
 	}
 
-	messages, err := fetchMessages(c, MAILBOX_NAME)
+	messages, err := fetchMessages(c, mailboxName)
 	if err != nil {
 		log.Println("FETCHING MESSAGES ERROR: " + err.Error())
 	}
@@ -44,7 +44,7 @@ func main() {
 	stats := statsOnSenders(messages)
 	sortSendersStatBySize(stats)
 
-	var totalMailboxSize uint32 = 0
+	var totalMailboxSize uint32
 	for _, stat := range stats {
 		totalMailboxSize += stat.TotalSize
 		log.Printf("  - %s: %d messages for %d MB, latest message on %s\n", stat.Sender.Address(), stat.MessagesCount, stat.TotalSize/1024^2, stat.LatestMessageDate)
