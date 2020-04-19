@@ -43,6 +43,7 @@ func main() {
 
 	stats := statsOnSenders(messages)
 
+	var totalMailboxSize uint32 = 0
 	// Sort stats on number of messages
 	sort.Slice(
 		stats,
@@ -51,8 +52,11 @@ func main() {
 		},
 	)
 	for _, stat := range stats {
-		log.Printf("  - %s: %d/%d • %s\n", stat.Sender.Address(), stat.MessagesCount, stat.TotalSize, stat.LatestMessageDate)
+		totalMailboxSize += stat.TotalSize
+		log.Printf("  - %s: %d messages for %d MB, latest message on %s\n", stat.Sender.Address(), stat.MessagesCount, stat.TotalSize/1024^2, stat.LatestMessageDate)
 	}
+
+	log.Printf("\nTotal mailbox size: %d MB\n", totalMailboxSize/1024^2)
 }
 
 func fetchMessages(c *client.Client, mailboxName string) ([]*imap.Message, error) {
@@ -73,7 +77,10 @@ func fetchMessages(c *client.Client, mailboxName string) ([]*imap.Message, error
 		fetchedMessages := make(chan *imap.Message, mbox.Messages)
 		done := make(chan error, 1)
 		go func() {
-			done <- c.Fetch(seqset, []imap.FetchItem{imap.FetchEnvelope}, fetchedMessages)
+			done <- c.Fetch(seqset, []imap.FetchItem{
+				imap.FetchEnvelope,
+				imap.FetchRFC822Size,
+			}, fetchedMessages)
 		}()
 
 		for msg := range fetchedMessages {
@@ -125,21 +132,13 @@ func statsOnSenders(messages []*imap.Message) []*senderStat {
 				if stat.LatestMessageDate.Before(m.Envelope.Date) {
 					stat.LatestMessageDate = m.Envelope.Date
 				}
-				var size uint32 = 0
-				if m.BodyStructure != nil {
-					size += m.BodyStructure.Size
-				}
-				stat.TotalSize += size
+				stat.TotalSize += m.Size
 			} else {
-				var size uint32 = 0
-				if m.BodyStructure != nil {
-					size += m.BodyStructure.Size
-				}
 				newStat := senderStat{
 					Sender:            msgSender,
 					MessagesCount:     1,
 					LatestMessageDate: m.Envelope.Date,
-					TotalSize:         size,
+					TotalSize:         m.Size,
 				}
 				statsMap[msgSender.Address()] = &newStat
 				stats = append(stats, &newStat)
