@@ -1,3 +1,5 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/rchampourlier/footprint_reducer_emails)](https://goreportcard.com/report/github.com/rchampourlier/footprint_reducer_emails)
+
 # README
 
 `clean_emails` is a basic Go program to help you clean you email history. It's compatible with any IMAP server.
