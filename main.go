@@ -42,15 +42,9 @@ func main() {
 	log.Printf("%d senders\n\n", len(senders))
 
 	stats := statsOnSenders(messages)
+	sortSendersStatBySize(stats)
 
 	var totalMailboxSize uint32 = 0
-	// Sort stats on number of messages
-	sort.Slice(
-		stats,
-		func(i, j int) bool {
-			return stats[i].MessagesCount < stats[j].MessagesCount
-		},
-	)
 	for _, stat := range stats {
 		totalMailboxSize += stat.TotalSize
 		log.Printf("  - %s: %d messages for %d MB, latest message on %s\n", stat.Sender.Address(), stat.MessagesCount, stat.TotalSize/1024^2, stat.LatestMessageDate)
@@ -147,6 +141,15 @@ func statsOnSenders(messages []*imap.Message) []*senderStat {
 	}
 
 	return stats
+}
+
+func sortSendersStatBySize(s []*senderStat) {
+	sort.Slice(
+		s,
+		func(i, j int) bool {
+			return s[i].TotalSize > s[j].TotalSize
+		},
+	)
 }
 
 func listSenders(messages []*imap.Message) []*imap.Address {
