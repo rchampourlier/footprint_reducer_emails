@@ -1,4 +1,4 @@
-package main
+package footprint_reducer_emails
 
 import (
 	"log"
@@ -9,6 +9,8 @@ import (
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
+
+	"footprint_reducer_emails/email_client"
 )
 
 const mailboxName = "[Gmail]/Tous les messages"
@@ -32,7 +34,7 @@ func main() {
 		log.Fatalln("LOGIN ERROR: " + err.Error())
 	}
 
-	messages, err := fetchMessages(c, mailboxName)
+	messages, err := email_client.FetchMessages(c, mailboxName)
 	if err != nil {
 		log.Println("FETCHING MESSAGES ERROR: " + err.Error())
 	}
@@ -51,42 +53,6 @@ func main() {
 	}
 
 	log.Printf("\nTotal mailbox size: %d MB\n", totalMailboxSize/1024^2)
-}
-
-func fetchMessages(c *client.Client, mailboxName string) ([]*imap.Message, error) {
-	var messages []*imap.Message
-
-	mbox, err := c.Select(mailboxName, false)
-	if err != nil {
-		log.Println("SELECT MAILBOX ERROR: " + err.Error())
-		return nil, err
-	}
-	if mbox.Messages > 0 {
-		messages = make([]*imap.Message, 0)
-
-		// Fetching all messages
-		seqset := new(imap.SeqSet)
-		seqset.AddRange(1, mbox.Messages)
-
-		fetchedMessages := make(chan *imap.Message, mbox.Messages)
-		done := make(chan error, 1)
-		go func() {
-			done <- c.Fetch(seqset, []imap.FetchItem{
-				imap.FetchEnvelope,
-				imap.FetchRFC822Size,
-			}, fetchedMessages)
-		}()
-
-		for msg := range fetchedMessages {
-			messages = append(messages, msg)
-		}
-
-		if err := <-done; err != nil {
-			log.Println("ERROR: " + err.Error())
-		}
-	}
-
-	return messages, nil
 }
 
 func listMailboxes(c *client.Client) []string {
