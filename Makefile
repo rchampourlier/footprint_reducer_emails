@@ -5,3 +5,4 @@ run-source-env:
 # Run the main executable with current env variables
 run:
 	go build -o bin/main main.go && bin/main
+

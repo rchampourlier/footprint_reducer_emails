@@ -1,4 +1,4 @@
-package footprint_reducer_emails
+package main
 
 import (
 	"log"

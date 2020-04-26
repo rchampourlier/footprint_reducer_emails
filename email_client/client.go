@@ -4,10 +4,12 @@ import (
 	"log"
 
 	"github.com/emersion/go-imap"
-	"github.com/emersion/go-imap/client"
 )
 
-func FetchMessages(c *client.Client, mailboxName string) ([]*imap.Message, error) {
+// Fetches all messages using the specified `go-imap/client.Client`,
+// from the specified mailbox.
+// Returns a slice of `*imap.Message` or an error.
+func FetchMessages(c ImapClient, mailboxName string) ([]*imap.Message, error) {
 	var messages []*imap.Message
 
 	mbox, err := c.Select(mailboxName, false)
@@ -25,10 +27,13 @@ func FetchMessages(c *client.Client, mailboxName string) ([]*imap.Message, error
 		fetchedMessages := make(chan *imap.Message, mbox.Messages)
 		done := make(chan error, 1)
 		go func() {
-			done <- c.Fetch(seqset, []imap.FetchItem{
-				imap.FetchEnvelope,
-				imap.FetchRFC822Size,
-			}, fetchedMessages)
+			done <- c.Fetch(
+				seqset,
+				[]imap.FetchItem{
+					imap.FetchEnvelope,
+					imap.FetchRFC822Size,
+				},
+				fetchedMessages)
 		}()
 
 		for msg := range fetchedMessages {
