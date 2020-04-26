@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/rchampourlier/footprint_reducer_emails.svg?branch=master)](https://travis-ci.org/rchampourlier/footprint_reducer_emails)
+[![Coverage Status](https://coveralls.io/repos/github/rchampourlier/footprint_reducer_emails/badge.svg?branch=master)](https://coveralls.io/github/rchampourlier/footprint_reducer_emails?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/rchampourlier/footprint_reducer_emails)](https://goreportcard.com/report/github.com/rchampourlier/footprint_reducer_emails)
 
 # README
