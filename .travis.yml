@@ -5,12 +5,7 @@ go:
 - master
 
 install:
-  - go get golang.org/x/tools/cmd/cover
-  - go get github.com/mattn/goveralls
   - make install
-
-script:
-  - /usr/bin/env bash ./.goveralls.sh
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)

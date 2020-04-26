@@ -1,6 +1,6 @@
 # Run tests
 test:
-	go test -v ./...
+	go test -v -covermode=count -coverprofile=coverage.out ./...
 
 # Run the main executable sourcing .env
 run-source-env:
