@@ -2,6 +2,7 @@ package email_client
 
 import (
 	"fmt"
+	"log"
 	"sync"
 	"testing"
 
@@ -35,6 +36,13 @@ func NewMockImapClient(t *testing.T) *MockImapClient {
 	}
 }
 
+// List
+func (m *MockImapClient) List(ref, name string, ch chan *imap.MailboxInfo) error {
+	msg := "ImapClientMock.List not implemented"
+	log.Fatalln(msg)
+	return fmt.Errorf(msg)
+}
+
 // Fetch
 func (m *MockImapClient) Fetch(seqSet *imap.SeqSet, items []imap.FetchItem, ch chan *imap.Message) error {
 	e := m.popExpectation()
@@ -53,6 +61,7 @@ func (m *MockImapClient) Fetch(seqSet *imap.SeqSet, items []imap.FetchItem, ch c
 	return ee.err
 }
 
+// Select
 func (m *MockImapClient) Select(name string, readOnly bool) (*imap.MailboxStatus, error) {
 	e := m.popExpectation()
 	if e == nil {

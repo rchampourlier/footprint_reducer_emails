@@ -6,6 +6,27 @@ import (
 	"github.com/emersion/go-imap"
 )
 
+// Fetches the list of mailboxes available on the server
+// and return a slice of their names or an error.
+func ListMailboxes(c ImapClient) ([]string, error) {
+	var err error
+	mailboxes := make(chan *imap.MailboxInfo, 10)
+	done := make(chan error, 1)
+	go func() {
+		done <- c.List("", "*", mailboxes)
+	}()
+
+	mailboxNames := make([]string, 0)
+	for m := range mailboxes {
+		mailboxNames = append(mailboxNames, m.Name)
+	}
+
+	if err = <-done; err != nil {
+		log.Println("LIST MAILBOX ERROR: " + err.Error())
+	}
+	return mailboxNames, err
+}
+
 // Fetches all messages using the specified `go-imap/client.Client`,
 // from the specified mailbox.
 // Returns a slice of `*imap.Message` or an error.
