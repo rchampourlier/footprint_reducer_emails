@@ -131,11 +131,11 @@ func TestStatsOnSenders(t *testing.T) {
 
 func TestSortSendersStatBySize(t *testing.T) {
 	SenderStats := []*email_tools.SenderStat{
-		&email_tools.SenderStat{
+		{
 			Sender:    createAddress("sender1"),
 			TotalSize: 100,
 		},
-		&email_tools.SenderStat{
+		{
 			Sender:    createAddress("sender2"),
 			TotalSize: 1,
 		},

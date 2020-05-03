@@ -53,7 +53,7 @@ func TestFetchMessagesFetchError(t *testing.T) {
 
 func fixtureMessages() []*imap.Message {
 	return []*imap.Message{
-		&imap.Message{
+		{
 			Envelope: &imap.Envelope{
 				Sender: []*imap.Address{
 					{
@@ -64,7 +64,7 @@ func fixtureMessages() []*imap.Message {
 			},
 			Size: 100,
 		},
-		&imap.Message{
+		{
 			Envelope: &imap.Envelope{
 				Sender: []*imap.Address{
 					{
