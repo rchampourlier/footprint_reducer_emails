@@ -4,7 +4,7 @@
 
 # README
 
-`clean_emails` is a basic Go program to help you clean you email history. It's compatible with any IMAP server.
+`clean_emails` is a basic Go program to help you clean you email history. It should be compatible with any IMAP server.
 
 ## STATUS
 
