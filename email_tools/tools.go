@@ -7,7 +7,7 @@ import (
 	"github.com/emersion/go-imap"
 )
 
-type senderStat struct {
+type SenderStat struct {
 	Sender            *imap.Address
 	MessagesCount     uint
 	LatestMessageDate time.Time
@@ -30,17 +30,11 @@ func ListSenders(messages []*imap.Message) []*imap.Address {
 	return senders
 }
 
-func SortSendersStatBySize(s []*senderStat) {
-	sort.Slice(
-		s,
-		func(i, j int) bool {
-			return s[i].TotalSize > s[j].TotalSize
-		},
-	)
-}
-func StatsOnSenders(messages []*imap.Message) []*senderStat {
-	statsMap := make(map[string]*senderStat)
-	stats := make([]*senderStat, 0)
+// Returns a slice of *SenderStat, with the statistics for each
+// sender in the given list of messages.
+func StatsOnSenders(messages []*imap.Message) []*SenderStat {
+	statsMap := make(map[string]*SenderStat)
+	stats := make([]*SenderStat, 0)
 
 	for _, m := range messages {
 		for _, msgSender := range m.Envelope.Sender {
@@ -52,7 +46,7 @@ func StatsOnSenders(messages []*imap.Message) []*senderStat {
 				}
 				stat.TotalSize += m.Size
 			} else {
-				newStat := senderStat{
+				newStat := SenderStat{
 					Sender:            msgSender,
 					MessagesCount:     1,
 					LatestMessageDate: m.Envelope.Date,
@@ -65,4 +59,13 @@ func StatsOnSenders(messages []*imap.Message) []*senderStat {
 	}
 
 	return stats
+}
+
+func SortSendersStatBySize(s []*SenderStat) {
+	sort.Slice(
+		s,
+		func(i, j int) bool {
+			return s[i].TotalSize > s[j].TotalSize
+		},
+	)
 }

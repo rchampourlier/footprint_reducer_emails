@@ -18,33 +18,9 @@ func TestFetchMessages(t *testing.T) {
 	clientMock.ExpectSelect().
 		WillRespondWithMailboxStatus(mailboxStatus)
 
-	messages := []*imap.Message{
-		&imap.Message{
-			Envelope: &imap.Envelope{
-				Sender: []*imap.Address{
-					{
-						MailboxName: "sender1",
-						HostName:    "host1",
-					},
-				},
-			},
-			Size: 100,
-		},
-		&imap.Message{
-			Envelope: &imap.Envelope{
-				Sender: []*imap.Address{
-					{
-						MailboxName: "sender2",
-						HostName:    "host2",
-					},
-				},
-			},
-			Size: 200,
-		},
-	}
 	clientMock.ExpectFetch().
 		WillRespondWith(nil).
-		WillSend(messages)
+		WillSend(fixtureMessages())
 
 	fetchedMessages, err := email_client.FetchMessages(clientMock, "mailbox#0")
 	if err != nil {
@@ -73,4 +49,31 @@ func TestFetchMessagesFetchError(t *testing.T) {
 	// expects to ignore the error, log a message
 	// expects to return a slice of `*imap.Message` without the one
 	//   in error
+}
+
+func fixtureMessages() []*imap.Message {
+	return []*imap.Message{
+		&imap.Message{
+			Envelope: &imap.Envelope{
+				Sender: []*imap.Address{
+					{
+						MailboxName: "sender1",
+						HostName:    "host1",
+					},
+				},
+			},
+			Size: 100,
+		},
+		&imap.Message{
+			Envelope: &imap.Envelope{
+				Sender: []*imap.Address{
+					{
+						MailboxName: "sender2",
+						HostName:    "host2",
+					},
+				},
+			},
+			Size: 200,
+		},
+	}
 }
