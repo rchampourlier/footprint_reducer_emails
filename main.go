@@ -7,8 +7,8 @@ import (
 
 	"github.com/emersion/go-imap/client"
 
-	"footprint_reducer_emails/email_client"
-	"footprint_reducer_emails/email_tools"
+	"footprint_reducer_emails/emailclient"
+	"footprint_reducer_emails/emailtools"
 )
 
 const mailboxName = "[Gmail]/Tous les messages"
@@ -32,17 +32,17 @@ func main() {
 		log.Fatalln("LOGIN ERROR: " + err.Error())
 	}
 
-	messages, err := email_client.FetchMessages(c, mailboxName)
+	messages, err := emailclient.FetchMessages(c, mailboxName)
 	if err != nil {
 		log.Println("FETCHING MESSAGES ERROR: " + err.Error())
 	}
 	log.Printf("Done: " + strconv.Itoa(len(messages)) + " messages!\n\n")
 
-	senders := email_tools.ListSenders(messages)
+	senders := emailtools.ListSenders(messages)
 	log.Printf("%d senders\n\n", len(senders))
 
-	stats := email_tools.StatsOnSenders(messages)
-	email_tools.SortSendersStatBySize(stats)
+	stats := emailtools.StatsOnSenders(messages)
+	emailtools.SortSendersStatBySize(stats)
 
 	var totalMailboxSize uint32
 	for _, stat := range stats {

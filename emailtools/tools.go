@@ -1,4 +1,4 @@
-package email_tools
+package emailtools
 
 import (
 	"sort"
@@ -7,6 +7,8 @@ import (
 	"github.com/emersion/go-imap"
 )
 
+// SenderStat is a structure containing basic statistics on a
+// sender.
 type SenderStat struct {
 	Sender            *imap.Address
 	MessagesCount     uint
@@ -14,6 +16,11 @@ type SenderStat struct {
 	TotalSize         uint32
 }
 
+// ListSenders returns the list of all senders present in the passed
+// `messages`.
+//
+// The result is a slice of unique `*imap.Address`. All senders are
+// included, even when several senders are present in a single messsage.
 func ListSenders(messages []*imap.Message) []*imap.Address {
 	uniqueSenders := make(map[string]bool)
 	senders := make([]*imap.Address, 0)
@@ -30,7 +37,7 @@ func ListSenders(messages []*imap.Message) []*imap.Address {
 	return senders
 }
 
-// Returns a slice of *SenderStat, with the statistics for each
+// StatsOnSenders returns a slice of *SenderStat, with the statistics for each
 // sender in the given list of messages.
 func StatsOnSenders(messages []*imap.Message) []*SenderStat {
 	statsMap := make(map[string]*SenderStat)
@@ -61,6 +68,10 @@ func StatsOnSenders(messages []*imap.Message) []*SenderStat {
 	return stats
 }
 
+// SortSendersStatBySize sorts the passed slice of `*SenderStat` on
+// its `TotalSize` field, descending.
+//
+// The sort is performed in place.
 func SortSendersStatBySize(s []*SenderStat) {
 	sort.Slice(
 		s,

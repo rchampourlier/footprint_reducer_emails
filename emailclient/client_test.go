@@ -1,7 +1,7 @@
-package email_client_test
+package emailclient_test
 
 import (
-	"footprint_reducer_emails/email_client"
+	"footprint_reducer_emails/emailclient"
 	"testing"
 
 	"github.com/emersion/go-imap"
@@ -10,7 +10,7 @@ import (
 // Expected to return a slice of the messages for the specified
 // mailbox.
 func TestFetchMessages(t *testing.T) {
-	clientMock := email_client.NewMockImapClient(t)
+	clientMock := emailclient.NewMockImapClient(t)
 
 	mailboxStatus := &(imap.MailboxStatus{
 		Messages: 2,
@@ -22,7 +22,7 @@ func TestFetchMessages(t *testing.T) {
 		WillRespondWith(nil).
 		WillSend(fixtureMessages())
 
-	fetchedMessages, err := email_client.FetchMessages(clientMock, "mailbox#0")
+	fetchedMessages, err := emailclient.FetchMessages(clientMock, "mailbox#0")
 	if err != nil {
 		t.Fatalf("FetchMessages returned an error: %s\n", err)
 	}

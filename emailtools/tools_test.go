@@ -1,7 +1,7 @@
-package email_tools_test
+package emailtools_test
 
 import (
-	"footprint_reducer_emails/email_tools"
+	"footprint_reducer_emails/emailtools"
 
 	"testing"
 	"time"
@@ -25,7 +25,7 @@ func TestListSenders(t *testing.T) {
 		createMessageWithSender([]string{"sender1"}),
 		createMessageWithSender([]string{"sender1"}),
 	}
-	senders := email_tools.ListSenders(messages)
+	senders := emailtools.ListSenders(messages)
 	if len(senders) != 1 {
 		t.Fatalf("Expected sender uniqueness from different messages (expected 1, found %d)\n", len(senders))
 	}
@@ -35,7 +35,7 @@ func TestListSenders(t *testing.T) {
 	messages = []*imap.Message{
 		createMessageWithSender([]string{"sender1", "sender1"}),
 	}
-	senders = email_tools.ListSenders(messages)
+	senders = emailtools.ListSenders(messages)
 	if len(senders) != 1 {
 		t.Fatalf("Expected sender uniqueness in single message (expected 1, found %d)\n", len(senders))
 	}
@@ -47,7 +47,7 @@ func TestListSenders(t *testing.T) {
 		createMessageWithSender([]string{"sender1", "sender2"}),
 		createMessageWithSender([]string{"sender3", "sender4"}),
 	}
-	senders = email_tools.ListSenders(messages)
+	senders = emailtools.ListSenders(messages)
 	if len(senders) != 4 {
 		t.Fatalf("Expected sender completeness (expected 4, got %d)\n", len(senders))
 	}
@@ -80,7 +80,7 @@ func TestStatsOnSenders(t *testing.T) {
 			date3,
 		),
 	}
-	SenderStats := email_tools.StatsOnSenders(messages)
+	SenderStats := emailtools.StatsOnSenders(messages)
 
 	// Check uniqueness and completeness
 	if len(SenderStats) != 3 {
@@ -130,7 +130,7 @@ func TestStatsOnSenders(t *testing.T) {
 }
 
 func TestSortSendersStatBySize(t *testing.T) {
-	SenderStats := []*email_tools.SenderStat{
+	SenderStats := []*emailtools.SenderStat{
 		{
 			Sender:    createAddress("sender1"),
 			TotalSize: 100,
@@ -140,7 +140,7 @@ func TestSortSendersStatBySize(t *testing.T) {
 			TotalSize: 1,
 		},
 	}
-	email_tools.SortSendersStatBySize(SenderStats)
+	emailtools.SortSendersStatBySize(SenderStats)
 	if SenderStats[0].Sender.MailboxName != "sender1" {
 		t.Fatalf("Expected the slice to be sorted by total size, descending")
 	}

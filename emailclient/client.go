@@ -1,4 +1,4 @@
-package email_client
+package emailclient
 
 import (
 	"log"
@@ -6,7 +6,7 @@ import (
 	"github.com/emersion/go-imap"
 )
 
-// Fetches the list of mailboxes available on the server
+// ListMailboxes fetches the list of mailboxes available on the server
 // and return a slice of their names or an error.
 func ListMailboxes(c ImapClient) ([]string, error) {
 	var err error
@@ -27,7 +27,7 @@ func ListMailboxes(c ImapClient) ([]string, error) {
 	return mailboxNames, err
 }
 
-// Fetches all messages using the specified `go-imap/client.Client`,
+// FetchMessages fetches all messages using the specified `go-imap/client.Client`,
 // from the specified mailbox.
 // Returns a slice of `*imap.Message` or an error.
 func FetchMessages(c ImapClient, mailboxName string) ([]*imap.Message, error) {

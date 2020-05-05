@@ -1,4 +1,4 @@
-package email_client
+package emailclient
 
 import (
 	"fmt"
@@ -36,14 +36,18 @@ func NewMockImapClient(t *testing.T) *MockImapClient {
 	}
 }
 
-// List
+// List currently raises an error because it's not implemented
 func (m *MockImapClient) List(ref, name string, ch chan *imap.MailboxInfo) error {
 	msg := "ImapClientMock.List not implemented"
 	log.Fatalln(msg)
 	return fmt.Errorf(msg)
 }
 
-// Fetch
+// Fetch will handle the call if it has been set as an expectation using
+// `ExpectFetch`.
+//
+// If messages have been defined on `ExpectedFetch` expectation, they will
+// be sent over the `ch` chan.
 func (m *MockImapClient) Fetch(seqSet *imap.SeqSet, items []imap.FetchItem, ch chan *imap.Message) error {
 	e := m.popExpectation()
 	if e == nil {
@@ -61,7 +65,11 @@ func (m *MockImapClient) Fetch(seqSet *imap.SeqSet, items []imap.FetchItem, ch c
 	return ee.err
 }
 
-// Select
+// Select will handle a call to this method on the mock if an expectation has been
+// set using `ExpectSelect`.
+//
+// It will respond with the `MailboxStatus` defined using `WillRespondWithMailboxStatus`
+// on the `ExpectedSelect` expectation.
 func (m *MockImapClient) Select(name string, readOnly bool) (*imap.MailboxStatus, error) {
 	e := m.popExpectation()
 	if e == nil {
@@ -115,6 +123,8 @@ func (e *ExpectedFetch) WillRespondWith(err error) *ExpectedFetch {
 	return e
 }
 
+// WillSend defines the messages to be sent by the expectation
+// when `Fetch` is called on the mock.
 func (e *ExpectedFetch) WillSend(messages []*imap.Message) *ExpectedFetch {
 	e.messages = messages
 	return e
