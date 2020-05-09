@@ -1,11 +1,11 @@
+//+build !test
+
 package main
 
 import (
 	"log"
 	"os"
 	"strconv"
-
-	"github.com/emersion/go-imap/client"
 
 	"footprint_reducer_emails/emailclient"
 	"footprint_reducer_emails/emailtools"
@@ -14,25 +14,15 @@ import (
 const mailboxName = "[Gmail]/Tous les messages"
 
 func main() {
-	// Connect to server
-	server := os.Getenv("SERVER")
-	c, err := client.DialTLS(server, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-
+	c, err := emailclient.ConnectAndLogin(
+		os.Getenv("SERVER"),
+		os.Getenv("EMAIL"),
+		os.Getenv("PASSWORD"),
+	)
 	// Don't forget to logout
 	defer c.Logout()
 
-	// Login
-	email := os.Getenv("EMAIL")
-	password := os.Getenv("PASSWORD")
-
-	if err := c.Login(email, password); err != nil {
-		log.Fatalln("LOGIN ERROR: " + err.Error())
-	}
-
-	messages, err := emailclient.FetchMessages(c, mailboxName)
+	messages, err := c.FetchMessages(mailboxName)
 	if err != nil {
 		log.Println("FETCHING MESSAGES ERROR: " + err.Error())
 	}

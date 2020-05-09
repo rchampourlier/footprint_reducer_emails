@@ -9,6 +9,8 @@ import (
 // we may use for testing.
 type ImapClient interface {
 	List(ref, name string, ch chan *imap.MailboxInfo) error
-	Select(name string, readOnly bool) (*imap.MailboxStatus, error)
+	Login(username, password string) error
+	Logout() error
 	Fetch(seqSet *imap.SeqSet, items []imap.FetchItem, ch chan *imap.Message) error
+	Select(name string, readOnly bool) (*imap.MailboxStatus, error)
 }

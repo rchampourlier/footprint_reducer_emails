@@ -11,6 +11,7 @@ import (
 // mailbox.
 func TestFetchMessages(t *testing.T) {
 	clientMock := emailclient.NewMockImapClient(t)
+	client := emailclient.NewClient(clientMock)
 
 	mailboxStatus := &(imap.MailboxStatus{
 		Messages: 2,
@@ -22,7 +23,7 @@ func TestFetchMessages(t *testing.T) {
 		WillRespondWith(nil).
 		WillSend(fixtureMessages())
 
-	fetchedMessages, err := emailclient.FetchMessages(clientMock, "mailbox#0")
+	fetchedMessages, err := client.FetchMessages("mailbox#0")
 	if err != nil {
 		t.Fatalf("FetchMessages returned an error: %s\n", err)
 	}

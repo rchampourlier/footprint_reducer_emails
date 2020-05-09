@@ -65,6 +65,16 @@ func (m *MockImapClient) Fetch(seqSet *imap.SeqSet, items []imap.FetchItem, ch c
 	return ee.err
 }
 
+// Login mocks the client `Login` function, returning `nil`
+func (m *MockImapClient) Login(username, password string) error {
+	return nil
+}
+
+// Logout mocks the client `Login` function, returning `nil`
+func (m *MockImapClient) Logout() error {
+	return nil
+}
+
 // Select will handle a call to this method on the mock if an expectation has been
 // set using `ExpectSelect`.
 //
