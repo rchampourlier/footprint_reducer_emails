@@ -8,6 +8,7 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"footprint_reducer_emails/controller"
 	"footprint_reducer_emails/ui"
@@ -20,7 +21,11 @@ func main() {
 	}
 	defer i.Close()
 
-	c := controller.NewController(i)
+	server := os.Getenv("SERVER")
+	username := os.Getenv("EMAIL")
+	password := os.Getenv("PASSWORD")
+
+	c := controller.NewControllerWithCredentials(i, server, username, password)
 	go func() {
 		err := c.Run()
 		if err != nil {
