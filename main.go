@@ -7,164 +7,54 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
-	"github.com/jroimartin/gocui"
+	"footprint_reducer_emails/ui"
 )
 
-// getServer
-func getServer(g *gocui.Gui, ch chan string) {
-	g.SetManagerFunc(func(gui *gocui.Gui) error {
-		if err := setGlobalKeybindings(gui); err != nil {
-			return err
-		}
-		if err := getUserInput(gui, "Enter the server domain and port (e.g. imap.gmail.com:993):", ch); err != nil {
-			return err
-		}
-		return nil
-	})
-}
-
-// getUsername
-func getUsername(g *gocui.Gui, ch chan string) {
-	g.SetManagerFunc(func(gui *gocui.Gui) error {
-		if err := setGlobalKeybindings(gui); err != nil {
-			return err
-		}
-		if err := getUserInput(gui, "Enter your IMAP username (generally your email address):", ch); err != nil {
-			return err
-		}
-		return nil
-	})
-}
-
-// getServer
-func getPassword(g *gocui.Gui, ch chan string) {
-	g.SetManagerFunc(func(gui *gocui.Gui) error {
-		if err := setGlobalKeybindings(gui); err != nil {
-			return err
-		}
-		if err := getUserInput(gui, "Enter your IMAP password:", ch); err != nil {
-			return err
-		}
-		return nil
-	})
-}
-
-// getUserInput displays a view to fetch the user's input.
-func getUserInput(g *gocui.Gui, msg string, ch chan string) error {
-	g.SetManagerFunc(func(gui *gocui.Gui) error {
-		maxX, maxY := g.Size()
-		inputView, err := g.SetView("input", maxX/2-30, maxY/2+2, maxX/2+30, maxY/2+4)
-		if err != nil {
-			if err != gocui.ErrUnknownView {
-				log.Panicf("error setting input view: %x", err)
-			}
-			inputView.Title = msg
-			inputView.Editable = true
-			if _, err := g.SetCurrentView("input"); err != nil {
-				log.Panicf("error setting current view to input: %x", err)
-			}
-		}
-		return nil
-	})
-	if err := setGlobalKeybindings(g); err != nil {
-		return err
-	}
-	err := g.SetKeybinding("input", gocui.KeyEnter, gocui.ModNone,
-		func(g *gocui.Gui, v *gocui.View) error {
-			// TODO get called twice, panics the 2nd time
-			line, err := v.Line(0)
-			if err != nil {
-				if err.Error() == "invalid point" {
-					ch <- ""
-					return nil
-				}
-				ch <- ""
-				return err
-			}
-			ch <- line
-			return nil
-		},
-	)
-	return err
-}
-
-func displayInformation(g *gocui.Gui, server, username, password string) {
-	g.SetManagerFunc(func(gui *gocui.Gui) error {
-		setGlobalKeybindings(gui)
-		maxX, maxY := g.Size()
-		v, err := g.SetView("information", maxX/2-30, maxY/2+1, maxX/2+30, maxY/2+5)
-		v.Title = "Information:"
-		if err != nil {
-			if err != gocui.ErrUnknownView {
-				return fmt.Errorf("error setting information view: %w", err)
-			}
-			if _, err := g.SetCurrentView("information"); err != nil {
-				return fmt.Errorf("error setting current view to information: %w", err)
-			}
-			fmt.Fprintf(v, "Server: %s\nUsername: %s\nPassword: %s\n", server, username, password)
-		}
-		return nil
-	})
-}
-
-func setGlobalKeybindings(g *gocui.Gui) error {
-	if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
-		return err
-	}
-	return nil
-}
-
 type program struct {
-	gui       *gocui.Gui
+	ui        ui.UI
 	serverURL string
 	username  string
 	password  string
 }
 
-func newProgram(g *gocui.Gui) *program {
-	return &program{g, "", "", ""}
+func newProgram(i ui.UI) *program {
+	return &program{i, "", "", ""}
 }
 
 func (p *program) run() error {
 	ch := make(chan string, 0)
 
 	// Get server URL
-	getServer(p.gui, ch)
+	p.ui.GetServer(ch)
 	server := <-ch
 
 	// Get email username
-	getUsername(p.gui, ch)
+	p.ui.GetUsername(ch)
 	username := <-ch
 
 	// Get email password
-	getPassword(p.gui, ch)
+	p.ui.GetPassword(ch)
 	password := <-ch
 
 	// Closing the channel
 	close(ch)
 
 	// Display information
-	displayInformation(p.gui, server, username, password)
+	p.ui.DisplayInformation(server, username, password)
 
 	return nil
 }
 
-func quit(g *gocui.Gui, v *gocui.View) error {
-	return gocui.ErrQuit
-}
-
 func main() {
-	g, err := gocui.NewGui(gocui.OutputNormal)
+	i, err := ui.NewGocuiUI()
 	if err != nil {
 		log.Panicln(err)
 	}
-	defer g.Close()
-	g.Cursor = true
+	defer i.Close()
 
-	p := newProgram(g)
+	p := newProgram(i)
 	go func() {
 		err := p.run()
 		if err != nil {
@@ -172,7 +62,5 @@ func main() {
 		}
 	}()
 
-	if err := g.MainLoop(); err != nil && err != gocui.ErrQuit {
-		log.Panicln(err)
-	}
+	i.Start()
 }
