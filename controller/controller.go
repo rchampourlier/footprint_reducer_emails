@@ -5,62 +5,77 @@ import (
 
 	"footprint_reducer_emails/emailclient"
 	"footprint_reducer_emails/emailtools"
-	"footprint_reducer_emails/ui"
+	uii "footprint_reducer_emails/ui"
 )
 
 // Controller represents a controller and stored the reference
 // to the UI and the state of the program execution.
 type Controller struct {
-	ui       ui.UI
+	ui       uii.UI
 	server   string
 	username string
 	password string
 }
 
 // NewController returns a new controller with the specified UI
-func NewController(i ui.UI) *Controller {
+func NewController(i uii.UI) *Controller {
 	return NewControllerWithCredentials(i, "", "", "")
 }
 
 // NewControllerWithCredentials initializes a new controller with
 // the specified UI and server  and credentials.
-func NewControllerWithCredentials(i ui.UI, server, username, password string) *Controller {
+func NewControllerWithCredentials(i uii.UI, server, username, password string) *Controller {
 	return &Controller{i, server, username, password}
 }
 
 // Run executes the program.
 func (c *Controller) Run() error {
-	ch := make(chan string, 0)
+	ui := c.ui
+	uiEventCh := make(chan uii.Event, 0)
+	defer close(uiEventCh)
+
+	handleInput := func(inputFunc func(ch chan<- uii.Event)) (string, error) {
+		inputFunc(uiEventCh)
+
+		evt := <-uiEventCh
+		if evt.Err != nil {
+			return "", evt.Err
+		} else if evt.Type != uii.EventTypeInputReturned {
+			return "", fmt.Errorf("wrong EventType: expected %d, got %d", uii.EventTypeInputReturned, evt.Type)
+		}
+		return evt.Data, nil
+	}
 
 	if c.server == "" {
-		// Get server
-		c.ui.GetServer(ch)
-		c.server = <-ch
+		s, err := handleInput(ui.GetServer)
+		if err != nil {
+			return err
+		}
+		c.server = s
 	}
 
 	if c.username == "" {
-		// Get email username
-		c.ui.GetUsername(ch)
-		c.username = <-ch
+		u, err := handleInput(ui.GetUsername)
+		if err != nil {
+			return err
+		}
+		c.username = u
 	}
 
 	if c.password == "" {
-		// Get email password
-		c.ui.GetPassword(ch)
-		c.password = <-ch
+		p, err := handleInput(ui.GetPassword)
+		if err != nil {
+			return err
+		}
+		c.password = p
 	}
 
-	// Closing the channel
-	close(ch)
-
 	// Display information
-	//c.ui.DisplayInformation(server, username, password)
+	//uii.DisplayInformation(server, username, password)
 
-	// Display the main view
-	mainViewCh := c.ui.MainView()
-	err := c.FetchEmails(mainViewCh)
-
-	return err
+	// Display the list of senders
+	listSendersCh := ui.ListSenders(uiEventCh)
+	return c.FetchEmails(listSendersCh)
 }
 
 // FetchEmails fetches emails from the IMAP server using the specified
