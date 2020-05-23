@@ -33,5 +33,5 @@ func main() {
 		}
 	}()
 
-	i.Start()
+	i.Start() // the interface has the control
 }

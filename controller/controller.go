@@ -6,15 +6,23 @@ import (
 	"footprint_reducer_emails/emailclient"
 	"footprint_reducer_emails/emailtools"
 	uii "footprint_reducer_emails/ui"
+
+	"github.com/emersion/go-imap"
 )
 
 // Controller represents a controller and stored the reference
 // to the UI and the state of the program execution.
 type Controller struct {
-	ui       uii.UI
+	ui uii.UI
+
+	// Data
 	server   string
 	username string
 	password string
+	messages []*imap.Message
+
+	// Calculated data
+	senderStats []*emailtools.SenderStat
 }
 
 // NewController returns a new controller with the specified UI
@@ -25,7 +33,9 @@ func NewController(i uii.UI) *Controller {
 // NewControllerWithCredentials initializes a new controller with
 // the specified UI and server  and credentials.
 func NewControllerWithCredentials(i uii.UI, server, username, password string) *Controller {
-	return &Controller{i, server, username, password}
+	msgs := make([]*imap.Message, 0)
+	ss := make([]*emailtools.SenderStat, 0)
+	return &Controller{i, server, username, password, msgs, ss}
 }
 
 // Run executes the program.
@@ -34,53 +44,88 @@ func (c *Controller) Run() error {
 	uiEventCh := make(chan uii.Event, 0)
 	defer close(uiEventCh)
 
-	handleInput := func(inputFunc func(ch chan<- uii.Event)) (string, error) {
-		inputFunc(uiEventCh)
-
+	handleInputReturned := func() (string, error) {
 		evt := <-uiEventCh
 		if evt.Err != nil {
 			return "", evt.Err
-		} else if evt.Type != uii.EventTypeInputReturned {
-			return "", fmt.Errorf("wrong EventType: expected %d, got %d", uii.EventTypeInputReturned, evt.Type)
+		} else if evt.Type != uii.EventTypeStringInputReturned {
+			return "", fmt.Errorf("wrong EventType: expected %d, got %d", uii.EventTypeStringInputReturned, evt.Type)
 		}
-		return evt.Data, nil
+		return evt.Data.(string), nil
 	}
 
 	if c.server == "" {
-		s, err := handleInput(ui.GetServer)
+		if err := ui.StringInput("Enter the server URL and port (e.g. imap.gmail.com:993):", uiEventCh); err != nil {
+			return err
+		}
+		data, err := handleInputReturned()
 		if err != nil {
 			return err
 		}
-		c.server = s
+		c.server = data
 	}
 
 	if c.username == "" {
-		u, err := handleInput(ui.GetUsername)
+		if err := ui.StringInput("Enter your IMAP username (generally your email address):", uiEventCh); err != nil {
+			return err
+		}
+		data, err := handleInputReturned()
 		if err != nil {
 			return err
 		}
-		c.username = u
+		c.username = data
 	}
 
 	if c.password == "" {
-		p, err := handleInput(ui.GetPassword)
+		if err := ui.StringWithMaskInput("Enter your IMAP password:", '•', uiEventCh); err != nil {
+			return err
+		}
+		data, err := handleInputReturned()
 		if err != nil {
 			return err
 		}
-		c.password = p
+		c.password = data
 	}
 
-	// Display information
-	//uii.DisplayInformation(server, username, password)
+	// Fetch messages
+	if err := c.fetchMessages(); err != nil {
+		return err
+	}
 
-	// Display the list of senders
-	listSendersCh := ui.ListSenders(uiEventCh)
-	return c.FetchEmails(listSendersCh)
+	// Calculate senderStats
+	c.senderStats = emailtools.StatsOnSenders(c.messages)
+	emailtools.SortSendersStatBySize(c.senderStats)
+
+	// Display senders
+	senderLines := make([]string, 0)
+	for i, stat := range c.senderStats {
+		line := fmt.Sprintf("%04d | %s | %d messages | %d MB | %s", i, stat.Sender.Address(), stat.MessagesCount, stat.TotalSize/1024^2, stat.LatestMessageDate)
+		senderLines = append(senderLines, line)
+	}
+	ui.List(senderLines, uiEventCh)
+
+	// Waiting for an event on the list of senders
+	evt := <-uiEventCh
+	if evt.Err != nil {
+		return evt.Err
+	} else if evt.Type != uii.EventTypeItemSelected {
+		return fmt.Errorf("invalid ui.EventType (expected %d, got %d)", uii.EventTypeItemSelected, evt.Type)
+	}
+
+	selectedSenderIndex := evt.Data.(int)
+	selectedSender := c.senderStats[selectedSenderIndex].Sender
+
+	// Display messages for the selected sender
+	messageLines := make([]string, 0)
+	for _, msg := range c.messagesForSenderAddress(selectedSender) {
+		messageLines = append(messageLines, msg)
+	}
+	ui.List(messageLines, uiEventCh)
+
+	return nil
 }
 
-// FetchEmails fetches emails from the IMAP server using the specified
-//  and credentials.
-func (c *Controller) FetchEmails(ch chan<- string) error {
+func (c *Controller) fetchMessages() error {
 	client, err := emailclient.ConnectAndLogin(c.server, c.username, c.password)
 	if err != nil {
 		return fmt.Errorf("failed to connect to IMAP server: %w", err)
@@ -93,14 +138,25 @@ func (c *Controller) FetchEmails(ch chan<- string) error {
 	const mailboxName = "[Gmail]/Tous les messages"
 
 	messages, err := client.FetchMessages(mailboxName)
-	stats := emailtools.StatsOnSenders(messages)
-	emailtools.SortSendersStatBySize(stats)
-
-	for i, stat := range stats {
-		str := fmt.Sprintf("%04d | %s | %d messages | %d MB | %s", i, stat.Sender.Address(), stat.MessagesCount, stat.TotalSize/1024^2, stat.LatestMessageDate)
-		ch <- str
+	if err != nil {
+		return err
 	}
-	close(ch)
+	c.messages = messages
+	return nil
+}
 
-	return err
+// messagesForSenderAddress returns a slice of strings where each line represent
+// a message of the specified sender.
+// Messages must have been fetched before with `fetchMessages`.
+func (c *Controller) messagesForSenderAddress(sender *imap.Address) []string {
+	msgs := emailtools.MessagesForSenderAddress(sender, c.messages)
+	emailtools.SortMessagesBySize(msgs)
+
+	lines := make([]string, 0)
+	for i, msg := range msgs {
+		line := fmt.Sprintf("%04d | %.0f MB | %s", i, float32(msg.Size/1024^2), msg.Envelope.Subject)
+		lines = append(lines, line)
+	}
+
+	return lines
 }

@@ -9,14 +9,14 @@ import (
 	"github.com/emersion/go-imap"
 )
 
-// Given a slice of emails, ListSenders should return a slice of
+// Given a slice of emails, Senders should return a slice of
 // unique IMAP addresses of the messages.
 //
 // - If the same sender is present in several emails, it should
 //   be present only once in the returned slice.
 // - If a message has several senders, all senders should be
 //   present in the returned slice.
-func TestListSenders(t *testing.T) {
+func TestSenders(t *testing.T) {
 	// Test uniqueness in different and same message
 
 	// Create 2 messages with the same sender
@@ -25,7 +25,7 @@ func TestListSenders(t *testing.T) {
 		createMessageWithSender([]string{"sender1"}),
 		createMessageWithSender([]string{"sender1"}),
 	}
-	senders := emailtools.ListSenders(messages)
+	senders := emailtools.Senders(messages)
 	if len(senders) != 1 {
 		t.Fatalf("Expected sender uniqueness from different messages (expected 1, found %d)\n", len(senders))
 	}
@@ -35,7 +35,7 @@ func TestListSenders(t *testing.T) {
 	messages = []*imap.Message{
 		createMessageWithSender([]string{"sender1", "sender1"}),
 	}
-	senders = emailtools.ListSenders(messages)
+	senders = emailtools.Senders(messages)
 	if len(senders) != 1 {
 		t.Fatalf("Expected sender uniqueness in single message (expected 1, found %d)\n", len(senders))
 	}
@@ -47,7 +47,7 @@ func TestListSenders(t *testing.T) {
 		createMessageWithSender([]string{"sender1", "sender2"}),
 		createMessageWithSender([]string{"sender3", "sender4"}),
 	}
-	senders = emailtools.ListSenders(messages)
+	senders = emailtools.Senders(messages)
 	if len(senders) != 4 {
 		t.Fatalf("Expected sender completeness (expected 4, got %d)\n", len(senders))
 	}
