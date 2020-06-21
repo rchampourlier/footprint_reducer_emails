@@ -13,8 +13,8 @@ type ImapClientWrapper struct {
 }
 
 // NewImapClientWrapper returns a `ImapClientWrapper` struct.
-func NewImapClientWrapper() *ImapClientWrapper {
-	return &ImapClientWrapper{}
+func NewImapClientWrapper(c ImapClient) *ImapClientWrapper {
+	return &ImapClientWrapper{c}
 }
 
 // Connect connects the client to the server, then logins

@@ -10,20 +10,21 @@ import (
 // Expected to return a slice of the messages for the specified
 // mailbox.
 func TestFetchMessages(t *testing.T) {
-	clientMock := emailclient.NewMockImapClient(t)
-	client := emailclient.NewMockImapClient(t)
+	mockImapClient := emailclient.NewMockImapClient(t)
+	testedClient := emailclient.NewImapClientWrapper(mockImapClient)
 
 	mailboxStatus := &(imap.MailboxStatus{
 		Messages: 2,
 	})
-	clientMock.ExpectSelect().
+	mockImapClient.ExpectSelect().
 		WillRespondWithMailboxStatus(mailboxStatus)
 
-	clientMock.ExpectFetch().
+	mockImapClient.ExpectFetch().
 		WillRespondWith(nil).
 		WillSend(fixtureMessages())
 
-	fetchedMessages, err := client.FetchMessages("mailbox#0")
+		// TODO: here we are testing the client wrapper!
+	fetchedMessages, err := testedClient.FetchMessages("mailbox#0")
 	if err != nil {
 		t.Fatalf("FetchMessages returned an error: %s\n", err)
 	}

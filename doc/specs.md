@@ -71,3 +71,5 @@
 
 ## Other
 - ⚙️  _V0.1_ _Tooling_ Provide a mock email client to ease development and testing
+  - Mock squeleton
+  - Canned messages
