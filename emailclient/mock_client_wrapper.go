@@ -40,7 +40,37 @@ func (w *MockClientWrapper) ListMailboxes() ([]string, error) {
 }
 
 func (w *MockClientWrapper) FetchMessages(mailboxName string) ([]*imap.Message, error) {
-	messages := make([]*imap.Message, 0)
+	messages := FixtureMessages()
 	w.logger.Println("FetchMessages")
 	return messages, nil
+}
+
+// FixtureMessages generates a slice of `*imap.Message`
+// to be used as fixtures for test or to test an application
+// in development.
+func FixtureMessages() []*imap.Message {
+	return []*imap.Message{
+		{
+			Envelope: &imap.Envelope{
+				Sender: []*imap.Address{
+					{
+						MailboxName: "sender1",
+						HostName:    "host1",
+					},
+				},
+			},
+			Size: 100,
+		},
+		{
+			Envelope: &imap.Envelope{
+				Sender: []*imap.Address{
+					{
+						MailboxName: "sender2",
+						HostName:    "host2",
+					},
+				},
+			},
+			Size: 200,
+		},
+	}
 }

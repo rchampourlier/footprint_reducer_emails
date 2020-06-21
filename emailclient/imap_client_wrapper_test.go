@@ -54,28 +54,5 @@ func TestFetchMessagesFetchError(t *testing.T) {
 }
 
 func fixtureMessages() []*imap.Message {
-	return []*imap.Message{
-		{
-			Envelope: &imap.Envelope{
-				Sender: []*imap.Address{
-					{
-						MailboxName: "sender1",
-						HostName:    "host1",
-					},
-				},
-			},
-			Size: 100,
-		},
-		{
-			Envelope: &imap.Envelope{
-				Sender: []*imap.Address{
-					{
-						MailboxName: "sender2",
-						HostName:    "host2",
-					},
-				},
-			},
-			Size: 200,
-		},
-	}
+	return emailclient.FixtureMessages()
 }
