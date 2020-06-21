@@ -7,45 +7,42 @@ import (
 	"github.com/emersion/go-imap/client"
 )
 
-// Client represents a client supporting the connection to
-// an Imap server.
-type Client struct {
+// ImapClientWrapper wraps an Imap email client.
+type ImapClientWrapper struct {
 	c ImapClient
 }
 
-// NewClient returns a pointer to a `Client` struct
-// with the specified `ImapClient`.
-func NewClient(c ImapClient) *Client {
-	return &Client{c}
+// NewImapClientWrapper returns a `ImapClientWrapper` struct.
+func NewImapClientWrapper() *ImapClientWrapper {
+	return &ImapClientWrapper{}
 }
 
-// ConnectAndLogin connects the client to the server, then logins
+// Connect connects the client to the server, then logins
 // if the connection succeeded.
 //
-// It stores the reference to the `imap.Client` is uses.
+// It stores the reference to the `imap.Client` it wraps.
 // Returns an error if the connection fails.
-func ConnectAndLogin(server, email, password string) (*Client, error) {
+func (c *ImapClientWrapper) Connect(server, email, password string) error {
 	imapClient, err := client.DialTLS(server, nil)
-	c := Client{imapClient}
 	if err != nil {
-		log.Fatal(err)
-		return &c, err
+		return err
 	}
-	if err = c.c.Login(email, password); err != nil {
+	c.c = imapClient
+	if err = imapClient.Login(email, password); err != nil {
 		log.Fatalln("LOGIN ERROR: " + err.Error())
 	}
-	return &c, err
+	return err
 }
 
 // Logout logs the client ouf of the server.
 // Should be called in a `defer` after `Connect`.
-func (c *Client) Logout() {
+func (c *ImapClientWrapper) Logout() {
 	c.c.Logout()
 }
 
 // ListMailboxes fetches the list of mailboxes available on the server
 // and return a slice of their names or an error.
-func (c *Client) ListMailboxes() ([]string, error) {
+func (c *ImapClientWrapper) ListMailboxes() ([]string, error) {
 	var err error
 	mailboxes := make(chan *imap.MailboxInfo, 10)
 	done := make(chan error, 1)
@@ -64,10 +61,10 @@ func (c *Client) ListMailboxes() ([]string, error) {
 	return mailboxNames, err
 }
 
-// FetchMessages fetches all messages using the specified `go-imap/client.Client`,
+// FetchMessages fetches all messages using the specified `go-imap/client.ClientWrapper`,
 // from the specified mailbox.
 // Returns a slice of `*imap.Message` or an error.
-func (c *Client) FetchMessages(mailboxName string) ([]*imap.Message, error) {
+func (c *ImapClientWrapper) FetchMessages(mailboxName string) ([]*imap.Message, error) {
 	var messages []*imap.Message
 
 	mbox, err := c.c.Select(mailboxName, false)

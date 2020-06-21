@@ -12,14 +12,15 @@
 
 ## List senders <a name="list-senders"></a>
 
-- ⚙️ _V0.1_ _UI_ Display a paginated list of all senders:
+- ✅ _V0.1_ _UI_ Display a paginated list of all senders:
   - ✅ Ordered by total size of messages, descending
   - ✅ Support arrows to navigate
     - Up/Down: up/down one line
     - Left/Right: up/down one page
-  - ❌ Type <ENTER> to display the current line's sender -> [Show sender](#show-sender)
+  - ✅ Type <ENTER> to display the current line's sender -> [Show sender](#show-sender)
 - _V1.0_ _UI_ Enable going back to the previous screen using <ESC>
 - _V1.0_ _UI_ Display instructions on keyboard commands (<ENTER>, arrows, <ESC>) 
+- _V1.0_ _UI_ Handle empty results and error
 
 ## Fetching messages <a name="fetching-messages"></a>
 
@@ -34,16 +35,16 @@
 
 ## Show sender <a name="show-sender"></a>
 
-- ❌ _V0.1_ Display a paginated list of all messages for the selected sender:
+- ⚙️  _V0.1_ Display a paginated list of all messages for the selected sender:
   - Display the subject
   - Support arrows to navigate
   - Scrolling highlights a message
-  - On <ENTER>, display the content of the highlighted message
+  - ❌ On <ENTER>, display the content of the highlighted message
 - ❌ _V0.1_ On <ESC>, go back to the previous screen
 - _V0.2_ Display statistics on the sender
   - Total number of emails
   - Total size
-  - C02e impact
+  - _V1.0_ C02e impact
 - _V0.2_ On <BACKSPACE> or <DELETE> -> [Delete sender](#delete-sender)
 
 ## Display message <a name="display-message"></a>
@@ -68,3 +69,5 @@
 
 - ✅ _V0.1_ _Feature_ Support exiting on `CTRL-C`
 
+## Other
+- ⚙️  _V0.1_ _Tooling_ Provide a mock email client to ease development and testing

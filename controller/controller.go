@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"os"
 
 	"footprint_reducer_emails/emailclient"
 	"footprint_reducer_emails/emailtools"
@@ -13,11 +14,12 @@ import (
 // Controller represents a controller and stored the reference
 // to the UI and the state of the program execution.
 type Controller struct {
+	w  emailclient.ClientWrapper
 	ui uii.UI
 
 	// Data
 	server   string
-	username string
+	email    string
 	password string
 	messages []*imap.Message
 
@@ -25,17 +27,26 @@ type Controller struct {
 	senderStats []*emailtools.SenderStat
 }
 
-// NewController returns a new controller with the specified UI
-func NewController(i uii.UI) *Controller {
-	return NewControllerWithCredentials(i, "", "", "")
+// NewController returns a new controller with the specified
+// Imap client wrapper and UI.
+//
+// It attempts to retrieve the server URL and credentials from
+// `SERVER`, `EMAIL` and `PASSWORD` environment variables.
+func NewController(w emailclient.ClientWrapper, i uii.UI) *Controller {
+	server := os.Getenv("SERVER")
+	email := os.Getenv("EMAIL")
+	password := os.Getenv("PASSWORD")
+
+	return NewControllerWithCredentials(w, i, server, email, password)
+
 }
 
 // NewControllerWithCredentials initializes a new controller with
 // the specified UI and server  and credentials.
-func NewControllerWithCredentials(i uii.UI, server, username, password string) *Controller {
+func NewControllerWithCredentials(w emailclient.ClientWrapper, i uii.UI, server, email, password string) *Controller {
 	msgs := make([]*imap.Message, 0)
 	ss := make([]*emailtools.SenderStat, 0)
-	return &Controller{i, server, username, password, msgs, ss}
+	return &Controller{w, i, server, email, password, msgs, ss}
 }
 
 // Run executes the program.
@@ -65,15 +76,15 @@ func (c *Controller) Run() error {
 		c.server = data
 	}
 
-	if c.username == "" {
-		if err := ui.StringInput("Enter your IMAP username (generally your email address):", uiEventCh); err != nil {
+	if c.email == "" {
+		if err := ui.StringInput("Enter your IMAP email (generally your email address):", uiEventCh); err != nil {
 			return err
 		}
 		data, err := handleInputReturned()
 		if err != nil {
 			return err
 		}
-		c.username = data
+		c.email = data
 	}
 
 	if c.password == "" {
@@ -87,9 +98,24 @@ func (c *Controller) Run() error {
 		c.password = data
 	}
 
+	// Connect to Imap server
+	if err := c.w.Connect(c.server, c.email, c.password); err != nil {
+		return fmt.Errorf("failed to connect to server: %w", err)
+	}
+	// Don't forget to logout
+	defer c.w.Logout()
+
 	// Fetch messages
 	if err := c.fetchMessages(); err != nil {
 		return err
+	}
+
+	if len(c.messages) == 0 {
+		ui.Information(
+			"Messages fetched",
+			"Done, 0 messages\nExit with CTRL-C.",
+		)
+		return nil
 	}
 
 	// Calculate senderStats
@@ -126,18 +152,10 @@ func (c *Controller) Run() error {
 }
 
 func (c *Controller) fetchMessages() error {
-	client, err := emailclient.ConnectAndLogin(c.server, c.username, c.password)
-	if err != nil {
-		return fmt.Errorf("failed to connect to IMAP server: %w", err)
-	}
-
-	// Don't forget to logout
-	defer client.Logout()
-
 	// TODO remove this constant
 	const mailboxName = "[Gmail]/Tous les messages"
 
-	messages, err := client.FetchMessages(mailboxName)
+	messages, err := c.w.FetchMessages(mailboxName)
 	if err != nil {
 		return err
 	}

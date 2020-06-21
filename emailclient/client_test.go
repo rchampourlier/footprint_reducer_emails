@@ -11,7 +11,7 @@ import (
 // mailbox.
 func TestFetchMessages(t *testing.T) {
 	clientMock := emailclient.NewMockImapClient(t)
-	client := emailclient.NewClient(clientMock)
+	client := emailclient.NewMockImapClient(t)
 
 	mailboxStatus := &(imap.MailboxStatus{
 		Messages: 2,
