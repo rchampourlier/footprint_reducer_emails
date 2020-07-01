@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"footprint_reducer_emails/emailclient"
@@ -51,6 +52,13 @@ func NewControllerWithCredentials(w emailclient.ClientWrapper, i uii.UI, server,
 
 // Run executes the program.
 func (c *Controller) Run() error {
+	// TMP
+	loggerFile, err := os.Create("./log.txt")
+	if err != nil {
+		panic(err)
+	}
+	logger := log.New(loggerFile, "", 0)
+
 	ui := c.ui
 	uiEventCh := make(chan uii.Event, 0)
 	defer close(uiEventCh)
@@ -143,11 +151,37 @@ func (c *Controller) Run() error {
 
 	// Display messages for the selected sender
 	messageLines := make([]string, 0)
-	for _, msg := range c.messagesForSenderAddress(selectedSender) {
-		messageLines = append(messageLines, msg)
+	sortedMessagesForSelectedSender := c.messagesForSenderAddressSortedBySize(selectedSender)
+	for i, msg := range sortedMessagesForSelectedSender {
+		messageLines = append(messageLines, listItemFromMessage(i, msg))
 	}
 	ui.List(messageLines, uiEventCh)
 
+	// Waiting for an event on the list of messages
+	evt = <-uiEventCh
+	if evt.Err != nil {
+		return evt.Err
+	} else if evt.Type != uii.EventTypeItemSelected {
+		return fmt.Errorf("invalid ui.EventType (expected %d, got %d)", uii.EventTypeItemSelected, evt.Type)
+	}
+
+	selectedMessageIndex := evt.Data.(int)
+	selectedMessage := sortedMessagesForSelectedSender[selectedMessageIndex]
+
+	// Display selected message
+	bodyString := ""
+	for _, bodySectionLiteral := range selectedMessage.Body {
+		literalBytes := make([]byte, 0)
+		_, err := bodySectionLiteral.Read(literalBytes)
+		if err != nil {
+			logger.Println("error reading message body")
+		} else {
+			bodyString += string(literalBytes)
+		}
+	}
+	ui.Page(selectedMessage.Envelope.Subject, bodyString)
+
+	logger.Println("out of Controller.Run")
 	return nil
 }
 
@@ -160,21 +194,19 @@ func (c *Controller) fetchMessages() error {
 		return err
 	}
 	c.messages = messages
+
 	return nil
 }
 
 // messagesForSenderAddress returns a slice of strings where each line represent
 // a message of the specified sender.
 // Messages must have been fetched before with `fetchMessages`.
-func (c *Controller) messagesForSenderAddress(sender *imap.Address) []string {
+func (c *Controller) messagesForSenderAddressSortedBySize(sender *imap.Address) []*imap.Message {
 	msgs := emailtools.MessagesForSenderAddress(sender, c.messages)
 	emailtools.SortMessagesBySize(msgs)
+	return msgs
+}
 
-	lines := make([]string, 0)
-	for i, msg := range msgs {
-		line := fmt.Sprintf("%04d | %.0f MB | %s", i, float32(msg.Size/1024^2), msg.Envelope.Subject)
-		lines = append(lines, line)
-	}
-
-	return lines
+func listItemFromMessage(i int, m *imap.Message) string {
+	return fmt.Sprintf("%04d | %.0f MB | %s", i, float32(m.Size/1024^2), m.Envelope.Subject)
 }

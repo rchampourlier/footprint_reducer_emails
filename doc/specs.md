@@ -39,8 +39,13 @@
   - Display the subject
   - Support arrows to navigate
   - Scrolling highlights a message
-  - ❌ On <ENTER>, display the content of the highlighted message
-- ❌ _V0.1_ On <ESC>, go back to the previous screen
+  - ⚙️  On <ENTER>, display the content of the highlighted message
+    - ⚙️  Build an UI component for full-screen page 
+    - ✅  Fix bug wrong message selected when displaying message content
+    - ✋ Fetch and display the message body
+    - ⚙️  Add body to message fixtures
+    - ❌ ~~Try and marshal real messages to files to use as fixtures~~ -> abandoned (`imap.Message` type is not marshalable)
+- 👉 _V0.1_ On <ESC>, go back to the previous screen
 - _V0.2_ Display statistics on the sender
   - Total number of emails
   - Total size
@@ -49,8 +54,8 @@
 
 ## Display message <a name="display-message"></a>
 
-- ❌ _V0.1_ Display a full-screen view with the selected message's content
-- ❌ _V0.1_ On <ESC>, go back to the previous view
+- ⚙️  _V0.1_ Display a full-screen view with the selected message's content
+- 👉 _V0.1_ On <ESC>, go back to the previous view
 - _V0.2_ On <BACKSPACE> or <DELETE> -> [Delete message](#delete-message)
 
 ## Delete message <a name="delete-message"></a>
@@ -69,5 +74,10 @@
 
 - ✅ _V0.1_ _Feature_ Support exiting on `CTRL-C`
 
+### _UI_ In lists
+
+- _V1.0_ Scrolling should only start after the cursor reaches the middle or even the bottom of the screen. It currently scrolls down to keep the cursor at the 1st line.
+
 ## Other
+
 - ✅  _V0.1_ _Tooling_ Provide a mock email client to ease development and testing

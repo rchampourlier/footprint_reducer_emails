@@ -63,6 +63,8 @@ func (c *ImapClientWrapper) ListMailboxes() ([]string, error) {
 
 // FetchMessages fetches all messages using the specified `go-imap/client.ClientWrapper`,
 // from the specified mailbox.
+// Only `Envelope` and `Size` fields are fetched.
+//
 // Returns a slice of `*imap.Message` or an error.
 func (c *ImapClientWrapper) FetchMessages(mailboxName string) ([]*imap.Message, error) {
 	var messages []*imap.Message

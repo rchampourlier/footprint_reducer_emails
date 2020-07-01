@@ -3,6 +3,7 @@ package emailclient
 import (
 	"log"
 	"os"
+	"strings"
 
 	"github.com/emersion/go-imap"
 )
@@ -49,6 +50,12 @@ func (w *MockClientWrapper) FetchMessages(mailboxName string) ([]*imap.Message, 
 // to be used as fixtures for test or to test an application
 // in development.
 func FixtureMessages() []*imap.Message {
+	// Build the message body
+	literal := strings.NewReader("Message content")
+	bodySectionName := &(imap.BodySectionName{})
+	body := make(map[*imap.BodySectionName]imap.Literal)
+	body[bodySectionName] = literal
+
 	return []*imap.Message{
 		{
 			Envelope: &imap.Envelope{
@@ -59,6 +66,7 @@ func FixtureMessages() []*imap.Message {
 					},
 				},
 			},
+			Body: body,
 			Size: 100,
 		},
 		{

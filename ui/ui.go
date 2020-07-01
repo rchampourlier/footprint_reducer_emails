@@ -21,6 +21,7 @@ type UI interface {
 	// Views
 	Information(title, message string)
 	List(items []string, ch chan<- Event)
+	Page(title, content string)
 	StringWithMaskInput(msg string, mask rune, ch chan<- Event) error
 	StringInput(msg string, ch chan<- Event) error
 }
@@ -194,6 +195,28 @@ func (g *GocuiUI) List(items []string, evtCh chan<- Event) {
 		logger.Printf("idx: %d\n", lineIndex)
 
 		evtCh <- Event{EventTypeItemSelected, lineIndex, nil}
+		return nil
+	})
+
+	g.setGlobalKeybindings()
+}
+
+// Page displays the specified content on the full space of the screen,
+// below the specified title.
+func (g *GocuiUI) Page(title, content string) {
+	g.gui.SetManagerFunc(func(gui *gocui.Gui) error {
+		maxX, maxY := g.gui.Size()
+		v, err := g.gui.SetView("page", 0, 0, maxX, maxY)
+		v.Title = title
+		if err != nil {
+			if err != gocui.ErrUnknownView {
+				return fmt.Errorf("error setting information view: %w", err)
+			}
+			if _, err := g.gui.SetCurrentView("page"); err != nil {
+				return fmt.Errorf("error setting current view to `page`: %w", err)
+			}
+			fmt.Fprintf(v, content)
+		}
 		return nil
 	})
 
