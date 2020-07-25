@@ -12,6 +12,10 @@ import (
 	"github.com/emersion/go-imap"
 )
 
+// TODO remove this constant
+//const mailboxName = "[Gmail]/Tous les messages"
+const mailboxName = "JobTeaser"
+
 // Controller represents a controller and stored the reference
 // to the UI and the state of the program execution.
 type Controller struct {
@@ -52,13 +56,6 @@ func NewControllerWithCredentials(w emailclient.ClientWrapper, i uii.UI, server,
 
 // Run executes the program.
 func (c *Controller) Run() error {
-	// TMP
-	loggerFile, err := os.Create("./log.txt")
-	if err != nil {
-		panic(err)
-	}
-	logger := log.New(loggerFile, "", 0)
-
 	ui := c.ui
 	uiEventCh := make(chan uii.Event, 0)
 	defer close(uiEventCh)
@@ -168,27 +165,40 @@ func (c *Controller) Run() error {
 	selectedMessageIndex := evt.Data.(int)
 	selectedMessage := sortedMessagesForSelectedSender[selectedMessageIndex]
 
-	// Display selected message
+	// Fetch selected message body
+	selectedMessage, err := c.fetchMessageText(selectedMessage)
+	if err != nil {
+		logger().Printf("error fetching message body: %x\n", err)
+	}
+
 	bodyString := ""
-	for _, bodySectionLiteral := range selectedMessage.Body {
-		literalBytes := make([]byte, 0)
-		_, err := bodySectionLiteral.Read(literalBytes)
+	// Display selected message
+	for _, sectionLiteral := range selectedMessage.Body {
+		literalBytes := make([]byte, sectionLiteral.Len())
+		_, err := sectionLiteral.Read(literalBytes)
+
+		// Stripping \r from the literal since it breaks the display
+		// in gocui's views.
+		// TODO: move this to the ui library instead.
+		crStrippedLiteral := make([]byte, 0)
+		for i := 0; i < len(literalBytes); i++ {
+			if literalBytes[i] != '\r' {
+				crStrippedLiteral = append(crStrippedLiteral, literalBytes[i])
+			}
+		}
+
 		if err != nil {
-			logger.Println("error reading message body")
+			logger().Println("error reading message body")
 		} else {
-			bodyString += string(literalBytes)
+			bodyString += fmt.Sprintf("%s\n---\n", crStrippedLiteral)
 		}
 	}
 	ui.Page(selectedMessage.Envelope.Subject, bodyString)
 
-	logger.Println("out of Controller.Run")
 	return nil
 }
 
 func (c *Controller) fetchMessages() error {
-	// TODO remove this constant
-	const mailboxName = "[Gmail]/Tous les messages"
-
 	messages, err := c.w.FetchMessages(mailboxName)
 	if err != nil {
 		return err
@@ -196,6 +206,13 @@ func (c *Controller) fetchMessages() error {
 	c.messages = messages
 
 	return nil
+}
+
+// fetchMessageText fetches the text parts of the messages
+// displayable on a text-only client.
+// The fetched body is added to the `imap.Message` struct.
+func (c *Controller) fetchMessageText(m *imap.Message) (*imap.Message, error) {
+	return c.w.FetchMessageText(mailboxName, m.Uid)
 }
 
 // messagesForSenderAddress returns a slice of strings where each line represent
@@ -209,4 +226,13 @@ func (c *Controller) messagesForSenderAddressSortedBySize(sender *imap.Address) 
 
 func listItemFromMessage(i int, m *imap.Message) string {
 	return fmt.Sprintf("%04d | %.0f MB | %s", i, float32(m.Size/1024^2), m.Envelope.Subject)
+}
+
+func logger() *log.Logger {
+	f, err := os.Create("./log.txt")
+	if err != nil {
+		panic(err)
+	}
+	logger := log.New(f, "", 0)
+	return logger
 }

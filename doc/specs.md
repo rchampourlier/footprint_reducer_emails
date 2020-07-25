@@ -40,11 +40,7 @@
   - Support arrows to navigate
   - Scrolling highlights a message
   - ⚙️  On <ENTER>, display the content of the highlighted message
-    - ⚙️  Build an UI component for full-screen page 
-    - ✅  Fix bug wrong message selected when displaying message content
-    - ✋ Fetch and display the message body
-    - ⚙️  Add body to message fixtures
-    - ❌ ~~Try and marshal real messages to files to use as fixtures~~ -> abandoned (`imap.Message` type is not marshalable)
+    - ✅ Fix bug wrong message selected when displaying message content
 - 👉 _V0.1_ On <ESC>, go back to the previous screen
 - _V0.2_ Display statistics on the sender
   - Total number of emails
@@ -55,6 +51,11 @@
 ## Display message <a name="display-message"></a>
 
 - ⚙️  _V0.1_ Display a full-screen view with the selected message's content
+  - ⚙️  Build an UI component for full-screen page 
+    - 👉 When the page is filled, I should be able to scroll within the page
+  - ✅ Fetch and display the message body
+  - ⚙️  Add body to message fixtures
+  - ❌ ~~Try and marshal real messages to files to use as fixtures~~ -> abandoned because `imap.Message` type is not marshalable
 - 👉 _V0.1_ On <ESC>, go back to the previous view
 - _V0.2_ On <BACKSPACE> or <DELETE> -> [Delete message](#delete-message)
 
@@ -81,3 +82,4 @@
 ## Other
 
 - ✅  _V0.1_ _Tooling_ Provide a mock email client to ease development and testing
+- _V1.0_ Remove or rewrite `logger` implementation. Currently, when using the `logger()` function, files are open without being closed 😱

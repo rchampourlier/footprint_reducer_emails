@@ -9,4 +9,5 @@ type ClientWrapper interface {
 	Logout()
 	ListMailboxes() ([]string, error)
 	FetchMessages(mailboxName string) ([]*imap.Message, error)
+	FetchMessageText(mailboxName string, uid uint32) (*imap.Message, error)
 }

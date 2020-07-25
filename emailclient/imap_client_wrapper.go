@@ -2,6 +2,7 @@ package emailclient
 
 import (
 	"log"
+	"os"
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
@@ -89,6 +90,7 @@ func (c *ImapClientWrapper) FetchMessages(mailboxName string) ([]*imap.Message, 
 				[]imap.FetchItem{
 					imap.FetchEnvelope,
 					imap.FetchRFC822Size,
+					imap.FetchUid,
 				},
 				fetchedMessages)
 		}()
@@ -103,4 +105,84 @@ func (c *ImapClientWrapper) FetchMessages(mailboxName string) ([]*imap.Message, 
 	}
 
 	return messages, nil
+}
+
+// 1. Fetch message's body structure
+// 2. Locate body parts of MIME type "text" and sub-type "plain"
+// 3. Create `imap.BodySectionName` for the `Fetch` command
+// 4. Pass the `Fetch` command with `FetchItem` from these `BodySectionName`
+// 5. Retrieve the message's text
+func (c *ImapClientWrapper) FetchMessageText(mailboxName string, uid uint32) (*imap.Message, error) {
+	mbox, err := c.c.Select(mailboxName, false)
+	if err != nil {
+		logger().Println("SELECT MAILBOX ERROR: " + err.Error())
+		return nil, err
+	}
+	seqset := new(imap.SeqSet)
+	seqset.AddNum(uid)
+
+	fetchedBodyStructureCh := make(chan *imap.Message, mbox.Messages)
+
+	// Fetch message's body structure
+	done := make(chan error, 1)
+	go func() {
+		done <- c.c.UidFetch(
+			seqset,
+			[]imap.FetchItem{
+				imap.FetchBodyStructure,
+			},
+			fetchedBodyStructureCh)
+	}()
+	msg := <-fetchedBodyStructureCh
+	if err := <-done; err != nil {
+		logger().Println("ERROR: " + err.Error())
+		return nil, err
+	}
+
+	// Locate text body parts
+	toFetchBodySectionNames := make([]imap.BodySectionName, 0)
+	msg.BodyStructure.Walk(func(path []int, part *imap.BodyStructure) bool {
+		if part.MIMEType == "TEXT" && part.MIMESubType == "PLAIN" {
+			bsn := imap.BodySectionName{
+				BodyPartName: imap.BodyPartName{
+					Specifier: imap.EntireSpecifier,
+					Path:      path,
+				},
+				Peek: true,
+			}
+			toFetchBodySectionNames = append(toFetchBodySectionNames, bsn)
+			return false
+		}
+		return true
+	})
+
+	// Create the `FetchItem`s from the selected body parts
+	fetchedMessageCh := make(chan *imap.Message, mbox.Messages)
+	fetchItems := make([]imap.FetchItem, 0)
+	for _, bsn := range toFetchBodySectionNames {
+		fetchItems = append(fetchItems, bsn.FetchItem())
+	}
+	fetchItems = append(fetchItems, imap.FetchEnvelope)
+	go func() {
+		done <- c.c.UidFetch(
+			seqset,
+			fetchItems,
+			fetchedMessageCh)
+	}()
+	msg = <-fetchedMessageCh
+	if err := <-done; err != nil {
+		logger().Println("ERROR: " + err.Error())
+		return nil, err
+	}
+
+	return msg, nil
+}
+
+func logger() *log.Logger {
+	f, err := os.Create("./log.txt")
+	if err != nil {
+		panic(err)
+	}
+	logger := log.New(f, "", 0)
+	return logger
 }

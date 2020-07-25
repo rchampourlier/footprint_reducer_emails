@@ -21,8 +21,8 @@ func main() {
 	}
 	defer i.Close()
 
-	w := emailclient.NewMockClientWrapper()
-	//w := emailclient.NewImapClientWrapper(nil)
+	//w := emailclient.NewMockClientWrapper()
+	w := emailclient.NewImapClientWrapper(nil)
 	c := controller.NewController(w, i)
 	go func() {
 		err := c.Run()

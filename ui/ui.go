@@ -186,14 +186,6 @@ func (g *GocuiUI) List(items []string, evtCh chan<- Event) {
 		// read the highlighted line
 		// return a command to display the messages for the highlighted sender
 		_, lineIndex := v.Origin()
-
-		f, err := os.Create("./log.txt")
-		if err != nil {
-			panic(err)
-		}
-		logger := log.New(f, "", 0)
-		logger.Printf("idx: %d\n", lineIndex)
-
 		evtCh <- Event{EventTypeItemSelected, lineIndex, nil}
 		return nil
 	})
@@ -208,6 +200,7 @@ func (g *GocuiUI) Page(title, content string) {
 		maxX, maxY := g.gui.Size()
 		v, err := g.gui.SetView("page", 0, 0, maxX, maxY)
 		v.Title = title
+		v.Editable = false
 		if err != nil {
 			if err != gocui.ErrUnknownView {
 				return fmt.Errorf("error setting information view: %w", err)
@@ -284,4 +277,13 @@ func (g *GocuiUI) _getUserInput(msg string, withMask bool, mask rune, ch chan<- 
 		},
 	)
 	return err
+}
+
+func logger() *log.Logger {
+	f, err := os.Create("./log.txt")
+	if err != nil {
+		panic(err)
+	}
+	logger := log.New(f, "", 0)
+	return logger
 }
