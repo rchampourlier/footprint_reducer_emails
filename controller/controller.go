@@ -13,8 +13,7 @@ import (
 )
 
 // TODO remove this constant
-//const mailboxName = "[Gmail]/Tous les messages"
-const mailboxName = "JobTeaser"
+const mailboxName = "[Gmail]/Tous les messages"
 
 // Controller represents a controller and stored the reference
 // to the UI and the state of the program execution.
