@@ -1,44 +1,35 @@
 //+build !test
 
+// Copyright 2014 The gocui Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package main
 
 import (
 	"log"
-	"os"
-	"strconv"
 
+	"footprint_reducer_emails/controller"
 	"footprint_reducer_emails/emailclient"
-	"footprint_reducer_emails/emailtools"
+	"footprint_reducer_emails/ui"
 )
 
-const mailboxName = "[Gmail]/Tous les messages"
-
 func main() {
-	c, err := emailclient.ConnectAndLogin(
-		os.Getenv("SERVER"),
-		os.Getenv("EMAIL"),
-		os.Getenv("PASSWORD"),
-	)
-	// Don't forget to logout
-	defer c.Logout()
-
-	messages, err := c.FetchMessages(mailboxName)
+	i, err := ui.NewGocuiUI()
 	if err != nil {
-		log.Println("FETCHING MESSAGES ERROR: " + err.Error())
+		log.Panicln(err)
 	}
-	log.Printf("Done: " + strconv.Itoa(len(messages)) + " messages!\n\n")
+	defer i.Close()
 
-	senders := emailtools.ListSenders(messages)
-	log.Printf("%d senders\n\n", len(senders))
+	//w := emailclient.NewMockClientWrapper()
+	w := emailclient.NewImapClientWrapper(nil)
+	c := controller.NewController(w, i)
+	go func() {
+		err := c.Run()
+		if err != nil {
+			panic(err)
+		}
+	}()
 
-	stats := emailtools.StatsOnSenders(messages)
-	emailtools.SortSendersStatBySize(stats)
-
-	var totalMailboxSize uint32
-	for _, stat := range stats {
-		totalMailboxSize += stat.TotalSize
-		log.Printf("  - %s: %d messages for %d MB, latest message on %s\n", stat.Sender.Address(), stat.MessagesCount, stat.TotalSize/1024^2, stat.LatestMessageDate)
-	}
-
-	log.Printf("\nTotal mailbox size: %d MB\n", totalMailboxSize/1024^2)
+	i.Start() // the interface has the control
 }

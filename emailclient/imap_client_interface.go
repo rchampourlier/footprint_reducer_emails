@@ -12,5 +12,6 @@ type ImapClient interface {
 	Login(username, password string) error
 	Logout() error
 	Fetch(seqSet *imap.SeqSet, items []imap.FetchItem, ch chan *imap.Message) error
+	UidFetch(seqSet *imap.SeqSet, items []imap.FetchItem, ch chan *imap.Message) error
 	Select(name string, readOnly bool) (*imap.MailboxStatus, error)
 }

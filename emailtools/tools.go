@@ -16,12 +16,12 @@ type SenderStat struct {
 	TotalSize         uint32
 }
 
-// ListSenders returns the list of all senders present in the passed
+// Senders returns the list of all senders present in the passed
 // `messages`.
 //
 // The result is a slice of unique `*imap.Address`. All senders are
 // included, even when several senders are present in a single messsage.
-func ListSenders(messages []*imap.Message) []*imap.Address {
+func Senders(messages []*imap.Message) []*imap.Address {
 	uniqueSenders := make(map[string]bool)
 	senders := make([]*imap.Address, 0)
 
@@ -35,6 +35,24 @@ func ListSenders(messages []*imap.Message) []*imap.Address {
 	}
 
 	return senders
+}
+
+// MessagesForSenderAddress returns a slice of `*imap.Message` which is the
+// passed slice filtered with only the ones where the sender is the
+// specified sender address.
+func MessagesForSenderAddress(sa *imap.Address, msgs []*imap.Message) []*imap.Message {
+	fMsgs := make([]*imap.Message, 0)
+
+	for _, m := range msgs {
+		for _, msgSender := range m.Envelope.Sender {
+			if msgSender.Address() == sa.Address() {
+				fMsgs = append(fMsgs, m)
+				break
+			}
+		}
+	}
+
+	return fMsgs
 }
 
 // StatsOnSenders returns a slice of *SenderStat, with the statistics for each
@@ -77,6 +95,19 @@ func SortSendersStatBySize(s []*SenderStat) {
 		s,
 		func(i, j int) bool {
 			return s[i].TotalSize > s[j].TotalSize
+		},
+	)
+}
+
+// SortMessagesBySize sorts the passed slice of `*imap.Message` on the
+// message's `Size`.
+//
+// The sort is performed in place.
+func SortMessagesBySize(m []*imap.Message) {
+	sort.Slice(
+		m,
+		func(i, j int) bool {
+			return m[i].Size > m[j].Size
 		},
 	)
 }

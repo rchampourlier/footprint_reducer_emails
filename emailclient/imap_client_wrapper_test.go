@@ -10,20 +10,21 @@ import (
 // Expected to return a slice of the messages for the specified
 // mailbox.
 func TestFetchMessages(t *testing.T) {
-	clientMock := emailclient.NewMockImapClient(t)
-	client := emailclient.NewClient(clientMock)
+	mockImapClient := emailclient.NewMockImapClient(t)
+	testedClient := emailclient.NewImapClientWrapper(mockImapClient)
 
 	mailboxStatus := &(imap.MailboxStatus{
 		Messages: 2,
 	})
-	clientMock.ExpectSelect().
+	mockImapClient.ExpectSelect().
 		WillRespondWithMailboxStatus(mailboxStatus)
 
-	clientMock.ExpectFetch().
+	mockImapClient.ExpectFetch().
 		WillRespondWith(nil).
 		WillSend(fixtureMessages())
 
-	fetchedMessages, err := client.FetchMessages("mailbox#0")
+		// TODO: here we are testing the client wrapper!
+	fetchedMessages, err := testedClient.FetchMessages("mailbox#0")
 	if err != nil {
 		t.Fatalf("FetchMessages returned an error: %s\n", err)
 	}
@@ -53,28 +54,5 @@ func TestFetchMessagesFetchError(t *testing.T) {
 }
 
 func fixtureMessages() []*imap.Message {
-	return []*imap.Message{
-		{
-			Envelope: &imap.Envelope{
-				Sender: []*imap.Address{
-					{
-						MailboxName: "sender1",
-						HostName:    "host1",
-					},
-				},
-			},
-			Size: 100,
-		},
-		{
-			Envelope: &imap.Envelope{
-				Sender: []*imap.Address{
-					{
-						MailboxName: "sender2",
-						HostName:    "host2",
-					},
-				},
-			},
-			Size: 200,
-		},
-	}
+	return emailclient.FixtureMessages()
 }
